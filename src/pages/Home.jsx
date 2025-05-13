@@ -50,10 +50,18 @@ export default function Home() {
     });
   };
 
+  // Handler for "Departments" card click
+  const departmentsClick = () => {
+    navigate('/departments');
+    toast.info('Showing all departments', {
+      icon: "🏢"
+    });
+  };
+
   // Mock data for stats
   const statsData = [
     { title: "Total Employees", value: 248, icon: Users, color: "bg-blue-500", onClick: allEmployeesClick },
-    { title: "Departments", value: 12, icon: Briefcase, color: "bg-purple-500" }, 
+    { title: "Departments", value: 12, icon: Briefcase, color: "bg-purple-500", onClick: departmentsClick }, 
     { title: "New Hires", value: 18, icon: User, color: "bg-green-500" },
     { title: "On Leave", value: 7, icon: Calendar, color: "bg-amber-500", onClick: onLeaveClick },
   ];
