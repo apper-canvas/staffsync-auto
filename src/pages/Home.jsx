@@ -42,10 +42,18 @@ export default function Home() {
     });
   };
 
+  // Handler for "Total Employees" card click
+  const allEmployeesClick = () => {
+    navigate('/all-employees');
+    toast.info('Showing all employees', {
+      icon: "👥"
+    });
+  };
+
   // Mock data for stats
   const statsData = [
-    { title: "Total Employees", value: 248, icon: Users, color: "bg-blue-500" },
-    { title: "Departments", value: 12, icon: Briefcase, color: "bg-purple-500" },
+    { title: "Total Employees", value: 248, icon: Users, color: "bg-blue-500", onClick: allEmployeesClick },
+    { title: "Departments", value: 12, icon: Briefcase, color: "bg-purple-500" }, 
     { title: "New Hires", value: 18, icon: User, color: "bg-green-500" },
     { title: "On Leave", value: 7, icon: Calendar, color: "bg-amber-500", onClick: onLeaveClick },
   ];

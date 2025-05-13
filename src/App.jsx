@@ -7,6 +7,7 @@ import getIcon from './utils/iconUtils';
 // Page imports
 import Home from './pages/Home';
 import OnLeaveEmployees from './pages/OnLeaveEmployees';
+import AllEmployees from './pages/AllEmployees';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -74,6 +75,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/on-leave-employees" element={<OnLeaveEmployees />} />
+          <Route path="/all-employees" element={<AllEmployees />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
