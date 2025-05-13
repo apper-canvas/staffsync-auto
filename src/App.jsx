@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import OnLeaveEmployees from './pages/OnLeaveEmployees';
 import AllEmployees from './pages/AllEmployees';
 import Departments from './pages/Departments';
+import NewHireEmployees from './pages/NewHireEmployees';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -78,6 +79,7 @@ function App() {
           <Route path="/on-leave-employees" element={<OnLeaveEmployees />} />
           <Route path="/all-employees" element={<AllEmployees />} />
           <Route path="/departments" element={<Departments />} />
+          <Route path="/new-hire-employees" element={<NewHireEmployees />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

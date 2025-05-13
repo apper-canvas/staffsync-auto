@@ -58,11 +58,19 @@ export default function Home() {
     });
   };
 
+  // Handler for "New Hires" card click
+  const newHiresClick = () => {
+    navigate('/new-hire-employees');
+    toast.info('Showing new hire employees', {
+      icon: "👨‍💼"
+    });
+  };
+
   // Mock data for stats
   const statsData = [
     { title: "Total Employees", value: 248, icon: Users, color: "bg-blue-500", onClick: allEmployeesClick },
     { title: "Departments", value: 12, icon: Briefcase, color: "bg-purple-500", onClick: departmentsClick }, 
-    { title: "New Hires", value: 18, icon: User, color: "bg-green-500" },
+    { title: "New Hires", value: 18, icon: User, color: "bg-green-500", onClick: newHiresClick },
     { title: "On Leave", value: 7, icon: Calendar, color: "bg-amber-500", onClick: onLeaveClick },
   ];
 
