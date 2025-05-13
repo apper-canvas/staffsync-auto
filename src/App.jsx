@@ -66,14 +66,27 @@ function App() {
       clientId: import.meta.env.VITE_APPER_PROJECT_ID,
       view: 'both',
       onSuccess: function(user) {
-        // CRITICAL: This exact currentPath logic must be preserved
+        // CRITICAL: This exact currentPath logic must be preserved in all implementations
+        // DO NOT simplify or modify this pattern as it ensures proper redirection flow
         let currentPath = window.location.pathname + window.location.search;
-        if (user && user.isAuthenticated) {
-          dispatch(setUser(user));
-          navigate('/');
-        } else if (!currentPath.includes('login')) {
-          navigate(currentPath);
+        let redirectPath = new URLSearchParams(window.location.search).get('redirect');
+        const isAuthPage = currentPath === '/login' || currentPath === '/signup';
+        if (user) {
+          // User is authenticated
+          dispatch(setUser(JSON.parse(JSON.stringify(user))));
+          if (redirectPath) {
+            navigate(redirectPath);
+          } else if (!isAuthPage) {
+            if (!currentPath.includes('/login') && !currentPath.includes('/signup')) {
+              navigate(currentPath);
+            } else {
+              navigate('/');
+            }
+          } else {
+            navigate('/');
+          }
         } else {
+          // User is not authenticated
           navigate('/login');
         }
       },

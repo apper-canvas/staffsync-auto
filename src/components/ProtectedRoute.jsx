@@ -1,15 +1,22 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import Layout from './Layout';
 
 function ProtectedRoute() {
   const { isAuthenticated } = useSelector((state) => state.user);
-  
-  // If not authenticated, redirect to login
+  const location = useLocation();
+
+  // If not authenticated, redirect to login with the current path as redirect target
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login?redirect=${location.pathname}`} replace />;
   }
-  
-  return <Outlet />;
+
+  // If authenticated, render the child routes inside the Layout
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
 }
 
 export default ProtectedRoute;
