@@ -78,7 +78,6 @@ export default function AllEmployees() {
     
     loadEmployees();
   }, [isAuthenticated, searchTerm, selectedDepartment, statusFilter, sortField, sortDirection, currentPage]);
-  ];
 
   // Department options
   const departments = ["All Departments", "Engineering", "Marketing", "HR", "Finance", "Design", "Sales"];
