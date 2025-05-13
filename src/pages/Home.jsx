@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import getIcon from '../utils/iconUtils';
 import MainFeature from '../components/MainFeature';
@@ -16,6 +17,7 @@ const Menu = getIcon('Menu');
 const X = getIcon('X');
 
 export default function Home() {
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [onLeaveFilter, setOnLeaveFilter] = useState(false);
@@ -34,8 +36,7 @@ export default function Home() {
 
   // Handler for "On Leave" card click
   const onLeaveClick = () => {
-    setActiveSection('employees');
-    setOnLeaveFilter(true);
+    navigate('/on-leave-employees');
     toast.info('Showing employees currently on leave', {
       icon: "🔍"
     });
@@ -47,7 +48,6 @@ export default function Home() {
     { title: "Departments", value: 12, icon: Briefcase, color: "bg-purple-500" },
     { title: "New Hires", value: 18, icon: User, color: "bg-green-500" },
     { title: "On Leave", value: 7, icon: Calendar, color: "bg-amber-500", onClick: onLeaveClick },
-    { title: "On Leave", value: 7, icon: Calendar, color: "bg-amber-500" },
   ];
 
   return (

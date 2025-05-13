@@ -6,6 +6,7 @@ import getIcon from './utils/iconUtils';
 
 // Page imports
 import Home from './pages/Home';
+import OnLeaveEmployees from './pages/OnLeaveEmployees';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -72,6 +73,7 @@ function App() {
       <AnimatePresence mode="wait">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/on-leave-employees" element={<OnLeaveEmployees />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
