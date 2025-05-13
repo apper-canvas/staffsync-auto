@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import getIcon from '../utils/iconUtils';
+import { useContext } from 'react';
+import { AuthContext } from '../App';
+import { fetchEmployees, deleteEmployee } from '../services/employeeService';
 
 // Import icons
 const Users = getIcon('Users');
@@ -17,6 +20,10 @@ const ArrowLeft = getIcon('ArrowLeft');
 const ArrowRight = getIcon('ArrowRight');
 
 export default function AllEmployees() {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useContext(AuthContext);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState('name');
@@ -24,24 +31,53 @@ export default function AllEmployees() {
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const itemsPerPage = 10;
+  const [employees, setEmployees] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
 
-  // Mock data for employees
-  const employees = [
-    { id: 1, name: "John Doe", email: "john.doe@example.com", department: "Engineering", position: "Senior Developer", status: "active", avatar: "JD" },
-    { id: 2, name: "Jane Smith", email: "jane.smith@example.com", department: "Marketing", position: "Marketing Manager", status: "active", avatar: "JS" },
-    { id: 3, name: "Robert Johnson", email: "robert.j@example.com", department: "Engineering", position: "Developer", status: "inactive", avatar: "RJ" },
-    { id: 4, name: "Lisa Wong", email: "lisa.wong@example.com", department: "HR", position: "HR Specialist", status: "on leave", avatar: "LW" },
-    { id: 5, name: "Michael Brown", email: "michael.b@example.com", department: "Design", position: "UX Designer", status: "active", avatar: "MB" },
-    { id: 6, name: "Emma Wilson", email: "emma.w@example.com", department: "Finance", position: "Financial Analyst", status: "active", avatar: "EW" },
-    { id: 7, name: "James Taylor", email: "james.t@example.com", department: "Engineering", position: "QA Engineer", status: "on leave", avatar: "JT" },
-    { id: 8, name: "Sophia Chen", email: "sophia.c@example.com", department: "Marketing", position: "Content Writer", status: "active", avatar: "SC" },
-    { id: 9, name: "David Park", email: "david.p@example.com", department: "Sales", position: "Sales Representative", status: "inactive", avatar: "DP" },
-    { id: 10, name: "Olivia Davis", email: "olivia.d@example.com", department: "HR", position: "Recruiter", status: "active", avatar: "OD" },
-    { id: 11, name: "William Lee", email: "william.l@example.com", department: "Engineering", position: "DevOps Engineer", status: "active", avatar: "WL" },
-    { id: 12, name: "Grace Kim", email: "grace.k@example.com", department: "Finance", position: "Accountant", status: "on leave", avatar: "GK" },
-    { id: 13, name: "Samuel White", email: "samuel.w@example.com", department: "Design", position: "Graphic Designer", status: "active", avatar: "SW" },
-    { id: 14, name: "Natalie Green", email: "natalie.g@example.com", department: "Marketing", position: "SEO Specialist", status: "inactive", avatar: "NG" },
-    { id: 15, name: "Thomas Martin", email: "thomas.m@example.com", department: "Sales", position: "Sales Manager", status: "on leave", avatar: "TM" },
+  // Fetch employees from API
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const loadEmployees = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Build filters for API call
+        const filters = {};
+        
+        if (searchTerm) {
+          filters.name = searchTerm;
+        }
+        
+        if (selectedDepartment !== 'All Departments') {
+          filters.department = selectedDepartment;
+        }
+        
+        if (statusFilter !== 'All Statuses') {
+          filters.status = statusFilter;
+        }
+        
+        // Add sorting parameters
+        filters.sortField = sortField === 'name' ? 'Name' : 
+                           sortField === 'department' ? 'department' : 
+                           sortField === 'position' ? 'position' : 'Name';
+        filters.sortDirection = sortDirection;
+        
+        const response = await fetchEmployees(filters, currentPage, itemsPerPage);
+        setEmployees(response.data || []);
+        setTotalCount(response.totalCount || 0);
+      } catch (err) {
+        setError('Failed to load employees. Please try again.');
+        console.error(err);
+        toast.error('Failed to load employees');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadEmployees();
+  }, [isAuthenticated, searchTerm, selectedDepartment, statusFilter, sortField, sortDirection, currentPage]);
   ];
 
   // Department options
@@ -92,15 +128,32 @@ export default function AllEmployees() {
 
   // Handle employee actions
   const handleViewEmployee = (id) => {
-    toast.info(`Viewing employee details for ID: ${id}`, { icon: "👁️" });
+    navigate(`/employee/${id}`);
   };
 
   const handleEditEmployee = (id) => {
-    toast.info(`Editing employee ID: ${id}`, { icon: "✏️" });
+    navigate(`/employee/edit/${id}`);
   };
 
   const handleDeleteEmployee = (id) => {
-    toast.success(`Employee ID: ${id} has been deleted`, { icon: "🗑️" });
+    if (window.confirm('Are you sure you want to delete this employee?')) {
+      setLoading(true);
+      deleteEmployee(id)
+        .then(() => {
+          toast.success('Employee deleted successfully');
+          // Refresh the employee list
+          fetchEmployees({
+            sortField: sortField,
+            sortDirection: sortDirection
+          }, currentPage, itemsPerPage)
+            .then(response => {
+              setEmployees(response.data || []);
+              setTotalCount(response.totalCount || 0);
+            });
+        })
+        .catch(err => toast.error('Failed to delete employee'))
+        .finally(() => setLoading(false));
+    }
   };
 
   return (
@@ -168,10 +221,19 @@ export default function AllEmployees() {
         </div>
 
         {/* Employees Table */}
-        <div className="bg-white dark:bg-surface-800 rounded-xl shadow-card overflow-hidden mb-6">
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-surface-600 dark:text-surface-400">Loading employees...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-500">{error}</p>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-surface-800 rounded-xl shadow-card overflow-hidden mb-6">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-surface-100 dark:bg-surface-700">
+            <table className="w-full min-w-full divide-y divide-surface-200 dark:divide-surface-700">
+              <thead className="bg-surface-100 dark:bg-surface-700 text-left">
                 <tr>
                   <th className="py-3 px-4 text-left">
                     <button
@@ -213,16 +275,17 @@ export default function AllEmployees() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-200 dark:divide-surface-700">
-                {currentEmployees.length > 0 ? (
-                  currentEmployees.map(employee => (
-                    <tr key={employee.id} className="hover:bg-surface-50 dark:hover:bg-surface-700/50">
+                {employees.length > 0 ? (
+                  employees.map(employee => (
+                    <tr key={employee.Id} className="hover:bg-surface-50 dark:hover:bg-surface-700/50">
                       <td className="py-3 px-4">
                         <div className="flex items-center">
                           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium mr-3">
-                            {employee.avatar}
+                            {employee.Name?.substring(0, 2).toUpperCase() || 'NA'}
                           </div>
                           <div>
-                            <div className="font-medium">{employee.name}</div>
+                            <div className="font-medium">{employee.Name}</div>
+                            <div className="text-xs text-surface-500 dark:text-surface-400">{employee.email}</div>
                             <div className="text-xs text-surface-500 dark:text-surface-400">{employee.email}</div>
                           </div>
                         </div>
@@ -236,7 +299,7 @@ export default function AllEmployees() {
                       <td className="py-3 px-4 hidden lg:table-cell">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                           ${employee.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 
-                            employee.status === 'inactive' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 
+                          employee.status === 'inactive' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 
                             'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}`}>
                           {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
                         </span>
@@ -244,21 +307,21 @@ export default function AllEmployees() {
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
                           <button 
-                            onClick={() => handleViewEmployee(employee.id)}
+                            onClick={() => handleViewEmployee(employee.Id)}
                             className="p-1 rounded-lg text-surface-600 hover:text-primary dark:text-surface-400 dark:hover:text-primary-light hover:bg-surface-100 dark:hover:bg-surface-700"
                             aria-label="View employee"
                           >
                             <Eye className="h-4 w-4" />
                           </button>
                           <button 
-                            onClick={() => handleEditEmployee(employee.id)}
+                            onClick={() => handleEditEmployee(employee.Id)}
                             className="p-1 rounded-lg text-surface-600 hover:text-primary dark:text-surface-400 dark:hover:text-primary-light hover:bg-surface-100 dark:hover:bg-surface-700"
                             aria-label="Edit employee"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button 
-                            onClick={() => handleDeleteEmployee(employee.id)}
+                            onClick={() => handleDeleteEmployee(employee.Id)}
                             className="p-1 rounded-lg text-surface-600 hover:text-accent dark:text-surface-400 dark:hover:text-accent hover:bg-surface-100 dark:hover:bg-surface-700"
                             aria-label="Delete employee"
                           >
@@ -278,6 +341,29 @@ export default function AllEmployees() {
               </tbody>
             </table>
           </div>
+          </div>
+        )}
+
+        {/* Add Employee Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/employee/add')}
+            className="btn btn-primary flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Add New Employee
+          </button>
         </div>
 
         {/* Pagination */}

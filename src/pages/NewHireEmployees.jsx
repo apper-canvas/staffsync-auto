@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import getIcon from '../utils/iconUtils';
+import { fetchEmployees } from '../services/employeeService';
+import { useContext } from 'react';
+import { AuthContext } from '../App';
 
 // Import icons
 const ArrowLeft = getIcon('ArrowLeft');
@@ -14,67 +17,44 @@ const Calendar = getIcon('Calendar');
 const Briefcase = getIcon('Briefcase');
 
 export default function NewHireEmployees() {
+  const { isAuthenticated } = useContext(AuthContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
+  const [newHireEmployees, setNewHireEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data for new hire employees
-  const newHireEmployees = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      avatar: "SJ",
-      email: "sarah.johnson@staffsync.com",
-      phone: "+1 (555) 123-4567",
-      position: "Front-end Developer",
-      department: "Engineering",
-      joinDate: "2023-05-15",
-      status: "active"
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      avatar: "MC",
-      email: "michael.chen@staffsync.com",
-      phone: "+1 (555) 987-6543",
-      position: "UX Designer",
-      department: "Design",
-      joinDate: "2023-05-18",
-      status: "training"
-    },
-    {
-      id: 3,
-      name: "Emily Rodriguez",
-      avatar: "ER",
-      email: "emily.rodriguez@staffsync.com",
-      phone: "+1 (555) 234-5678",
-      position: "Marketing Specialist",
-      department: "Marketing",
-      joinDate: "2023-05-20",
-      status: "active"
-    },
-    {
-      id: 4,
-      name: "David Kim",
-      avatar: "DK",
-      email: "david.kim@staffsync.com",
-      phone: "+1 (555) 876-5432",
-      position: "Data Analyst",
-      department: "Analytics",
-      joinDate: "2023-05-22",
-      status: "training"
-    },
-    {
-      id: 5,
-      name: "Jessica Patel",
-      avatar: "JP",
-      email: "jessica.patel@staffsync.com",
-      phone: "+1 (555) 345-6789",
-      position: "HR Coordinator",
-      department: "Human Resources",
-      joinDate: "2023-05-25",
-      status: "active"
-    }
-  ];
+  // Fetch new hire employees (joined in the last 30 days)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const loadNewHires = async () => {
+      setLoading(true);
+      try {
+        // Get the date 30 days ago
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        // Format for comparison
+        const filters = {
+          // Add filter for join_date if needed
+        };
+        
+        const response = await fetchEmployees(filters);
+        // Filter locally for new hires based on join_date
+        const newHires = response.data.filter(emp => new Date(emp.join_date) >= thirtyDaysAgo);
+        setNewHireEmployees(newHires || []);
+      } catch (err) {
+        setError('Failed to load new hire employees');
+        console.error('Error loading new hires:', err);
+        toast.error('Failed to load new hire employees');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadNewHires();
+  }, [isAuthenticated]);
 
   // Filter employees based on search term and filter
   const filteredEmployees = newHireEmployees.filter(employee => {
@@ -138,10 +118,14 @@ export default function NewHireEmployees() {
 
       {/* Employee list */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEmployees.length > 0 ? (
+        {loading ? (
+          <p className="col-span-full text-center py-8 text-surface-500 dark:text-surface-400">Loading new hire employees...</p>
+        ) : error ? (
+          <p className="col-span-full text-center py-8 text-red-500">{error}</p>
+        ) : filteredEmployees.length > 0 ? (
           filteredEmployees.map((employee) => (
             <motion.div
-              key={employee.id}
+              key={employee.Id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="card-neu p-6 rounded-xl relative overflow-hidden group"
@@ -149,10 +133,10 @@ export default function NewHireEmployees() {
               <div className={`absolute top-0 right-0 w-2 h-2 m-3 rounded-full ${employee.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold text-lg mr-4">
-                  {employee.avatar}
+                  {employee.Name?.substring(0, 2).toUpperCase() || 'N/A'}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">{employee.name}</h3>
+                  <h3 className="font-semibold text-lg">{employee.Name}</h3>
                   <p className="text-sm text-surface-500 dark:text-surface-400">{employee.position}</p>
                 </div>
               </div>
@@ -160,13 +144,18 @@ export default function NewHireEmployees() {
                 <p className="flex items-center text-sm"><Mail className="w-4 h-4 mr-2 text-surface-400" /> {employee.email}</p>
                 <p className="flex items-center text-sm"><Phone className="w-4 h-4 mr-2 text-surface-400" /> {employee.phone}</p>
                 <p className="flex items-center text-sm"><Briefcase className="w-4 h-4 mr-2 text-surface-400" /> {employee.department}</p>
-                <p className="flex items-center text-sm"><Calendar className="w-4 h-4 mr-2 text-surface-400" /> Joined: {new Date(employee.joinDate).toLocaleDateString()}</p>
+                <p className="flex items-center text-sm"><Calendar className="w-4 h-4 mr-2 text-surface-400" /> Joined: {employee.join_date ? new Date(employee.join_date).toLocaleDateString() : 'N/A'}</p>
               </div>
-              <button onClick={() => handleViewDetails(employee)} className="mt-4 w-full py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors">View Details</button>
+              <button 
+                onClick={() => handleViewDetails(employee)} 
+                className="mt-4 w-full py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+              >
+                View Details
+              </button>
             </motion.div>
           ))
         ) : (
-          <p className="col-span-full text-center py-8 text-surface-500 dark:text-surface-400">No employees found matching your criteria.</p>
+          <p className="col-span-full text-center py-8 text-surface-500 dark:text-surface-400">No new hire employees found.</p>
         )}
       </div>
     </motion.div>

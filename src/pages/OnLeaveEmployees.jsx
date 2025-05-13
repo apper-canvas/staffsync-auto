@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import getIcon from '../utils/iconUtils';
+import { useContext, useEffect } from 'react';
+import { AuthContext } from '../App';
+import { fetchLeaveRequests } from '../services/leaveRequestService';
 
 // Import icons
 const ArrowLeft = getIcon('ArrowLeft');
@@ -12,18 +15,35 @@ const Search = getIcon('Search');
 
 export default function OnLeaveEmployees() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useContext(AuthContext);
   const [searchTerm, setSearchTerm] = useState('');
+  const [employeesOnLeave, setEmployeesOnLeave] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  // Mock data for employees on leave
-  const employeesOnLeave = [
-    { id: 1, name: "John Doe", position: "Software Engineer", department: "Engineering", leaveType: "Vacation", startDate: "2023-06-10", endDate: "2023-06-17", status: "Approved" },
-    { id: 2, name: "Jane Smith", position: "Product Manager", department: "Product", leaveType: "Sick Leave", startDate: "2023-06-12", endDate: "2023-06-14", status: "Approved" },
-    { id: 3, name: "Michael Johnson", position: "UX Designer", department: "Design", leaveType: "Personal", startDate: "2023-06-08", endDate: "2023-06-15", status: "Approved" },
-    { id: 4, name: "Emily Williams", position: "Marketing Specialist", department: "Marketing", leaveType: "Maternity", startDate: "2023-05-15", endDate: "2023-08-15", status: "Approved" },
-    { id: 5, name: "David Brown", position: "Sales Representative", department: "Sales", leaveType: "Vacation", startDate: "2023-06-13", endDate: "2023-06-20", status: "Approved" },
-    { id: 6, name: "Sarah Davis", position: "HR Specialist", department: "Human Resources", leaveType: "Training", startDate: "2023-06-11", endDate: "2023-06-13", status: "Approved" },
-    { id: 7, name: "Robert Wilson", position: "Financial Analyst", department: "Finance", leaveType: "Sick Leave", startDate: "2023-06-09", endDate: "2023-06-16", status: "Approved" },
-  ];
+  // Fetch leave requests
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const loadLeaveRequests = async () => {
+      setLoading(true);
+      try {
+        const response = await fetchLeaveRequests({ 
+          status: 'Approved',
+        });
+        
+        setEmployeesOnLeave(response.data || []);
+      } catch (err) {
+        setError('Failed to load leave requests');
+        console.error('Error loading leave requests:', err);
+        toast.error('Failed to load leave requests');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadLeaveRequests();
+  }, [isAuthenticated, searchTerm]);
 
   // Filter employees based on search term
   const filteredEmployees = employeesOnLeave.filter(employee => 
@@ -105,41 +125,55 @@ export default function OnLeaveEmployees() {
         {/* Employees on leave list */}
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-surface-200 dark:divide-surface-700">
-              <thead className="bg-surface-100 dark:bg-surface-800">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Employee</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Department</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Leave Type</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Date Range</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Status</th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-surface-800 divide-y divide-surface-200 dark:divide-surface-700">
-                {filteredEmployees.map((employee) => (
-                  <motion.tr 
-                    key={employee.id} 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.2 }}
-                    className="hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium">{employee.name}</div>
-                      <div className="text-sm text-surface-500 dark:text-surface-400">{employee.position}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{employee.department}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{employee.leaveType}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{employee.startDate} to {employee.endDate}</td>
-                    <td className="px-6 py-4 whitespace-nowrap"><span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{employee.status}</span></td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button onClick={() => handleViewDetails(employee)} className="btn btn-primary text-sm py-1">View Details</button>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-surface-600 dark:text-surface-400">Loading leave requests...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-500">{error}</p>
+              </div>
+            ) : filteredEmployees.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-surface-600 dark:text-surface-400">No employees currently on leave</p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-surface-200 dark:divide-surface-700">
+                <thead className="bg-surface-100 dark:bg-surface-800">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Employee</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Department</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Leave Type</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Date Range</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Status</th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-surface-800 divide-y divide-surface-200 dark:divide-surface-700">
+                  {filteredEmployees.map((leave) => (
+                    <motion.tr 
+                      key={leave.Id} 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium">{leave.employee?.Name || 'N/A'}</div>
+                        <div className="text-sm text-surface-500 dark:text-surface-400">{leave.employee?.position || 'N/A'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{leave.employee?.department || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{leave.leave_type}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{new Date(leave.start_date).toLocaleDateString()} to {new Date(leave.end_date).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap"><span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{leave.status}</span></td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <button onClick={() => handleViewDetails(leave)} className="btn btn-primary text-sm py-1">View Details</button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </motion.div>
