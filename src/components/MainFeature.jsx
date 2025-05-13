@@ -15,7 +15,7 @@ const ChevronLeft = getIcon('ChevronLeft');
 const ChevronRight = getIcon('ChevronRight');
 const Plus = getIcon('Plus');
 
-export default function MainFeature() {
+export default function MainFeature({ initialStatus = 'All Statuses' }) {
   // Initial employee data
   const initialEmployees = [
     { 
@@ -88,7 +88,7 @@ export default function MainFeature() {
   const [filteredEmployees, setFilteredEmployees] = useState(initialEmployees);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
-  const [selectedStatus, setSelectedStatus] = useState('All Statuses');
+  const [selectedStatus, setSelectedStatus] = useState(initialStatus);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -133,7 +133,7 @@ export default function MainFeature() {
     
     setFilteredEmployees(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, selectedDepartment, selectedStatus, employees]);
+  }, [searchTerm, selectedDepartment, selectedStatus, employees, initialStatus]);
 
   // Pagination
   const indexOfLastEmployee = currentPage * employeesPerPage;

@@ -18,6 +18,7 @@ const X = getIcon('X');
 export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
+  const [onLeaveFilter, setOnLeaveFilter] = useState(false);
   
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -31,11 +32,21 @@ export default function Home() {
     });
   };
 
+  // Handler for "On Leave" card click
+  const onLeaveClick = () => {
+    setActiveSection('employees');
+    setOnLeaveFilter(true);
+    toast.info('Showing employees currently on leave', {
+      icon: "🔍"
+    });
+  };
+
   // Mock data for stats
   const statsData = [
     { title: "Total Employees", value: 248, icon: Users, color: "bg-blue-500" },
     { title: "Departments", value: 12, icon: Briefcase, color: "bg-purple-500" },
     { title: "New Hires", value: 18, icon: User, color: "bg-green-500" },
+    { title: "On Leave", value: 7, icon: Calendar, color: "bg-amber-500", onClick: onLeaveClick },
     { title: "On Leave", value: 7, icon: Calendar, color: "bg-amber-500" },
   ];
 
@@ -181,9 +192,16 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="card-neu flex items-center"
+                    className={`card-neu flex items-center ${stat.onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+                    onClick={stat.onClick}
                   >
-                    <div className={`w-12 h-12 rounded-xl ${stat.color} flex items-center justify-center text-white`}>
+                    <div 
+                      className={`w-12 h-12 rounded-xl ${stat.color} flex items-center justify-center text-white ${
+                        stat.onClick 
+                          ? 'group-hover:scale-105 transition-transform' 
+                          : ''
+                      }`}
+                    >
                       <stat.icon className="w-6 h-6" />
                     </div>
                     <div className="ml-4">
@@ -203,6 +221,7 @@ export default function Home() {
           {activeSection !== 'dashboard' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
+              key={activeSection}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className="card-neu flex items-center justify-center h-64"
@@ -210,6 +229,11 @@ export default function Home() {
               <p className="text-lg">
                 {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)} content coming soon...
               </p>
+              {activeSection === 'employees' && (
+                <div className="mt-8">
+                  <MainFeature initialStatus={onLeaveFilter ? 'on leave' : 'All Statuses'} />
+                </div>
+              )}
             </motion.div>
           )}
         </div>
